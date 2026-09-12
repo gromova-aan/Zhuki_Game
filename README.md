@@ -1,2 +1,2 @@
 # Zhuki_Game
-##IP-313 Gromova Anastasia & Shirokov Kirill
+IP-313 Gromova Anastasia & Shirokov Kirill
