@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Zhuki_Game</string>
+    <string name="tab_registration">Регистрация</string>
+    <string name="tab_rules">Правила</string>
+    <string name="tab_authors">Авторы</string>
+    <string name="tab_settings">Настройки</string>
 </resources>

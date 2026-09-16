@@ -1,12 +1,12 @@
 package com.example.zhuki_game
 
-import android.app.DatePickerDialog
 import android.os.Bundle
-import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import androidx.fragment.app.Fragment
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 
 class MainActivity : AppCompatActivity() {
 
@@ -14,118 +14,30 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Находим все элементы
-        val etFullName = findViewById<EditText>(R.id.etFullName)
-        val rgGender = findViewById<RadioGroup>(R.id.rgGender)
-        val spCourse = findViewById<Spinner>(R.id.spCourse)
-        val tvDifficulty = findViewById<TextView>(R.id.tvDifficulty)
-        val sbDifficulty = findViewById<SeekBar>(R.id.sbDifficulty)
-        val tvBirthDate = findViewById<TextView>(R.id.tvBirthDate)
-        val btnSubmit = findViewById<Button>(R.id.btnSubmit)
-        val tvResult = findViewById<TextView>(R.id.tvResult)
-        val ivZodiac = findViewById<ImageView>(R.id.ivZodiac)
-        val tvZodiacName = findViewById<TextView>(R.id.tvZodiacName)
+        val viewPager = findViewById<ViewPager2>(R.id.viewPager)
+        val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
 
-        // Настройка Spinner с курсами
-        val courses = arrayOf("1 курс", "2 курс", "3 курс", "4 курс", "5 курс")
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            courses
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spCourse.adapter = adapter
+        viewPager.adapter = TabsAdapter(this)
 
-        // Обработка SeekBar
-        sbDifficulty.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                tvDifficulty.text = "Уровень сложности: $progress"
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> getString(R.string.tab_registration)
+                1 -> getString(R.string.tab_rules)
+                2 -> getString(R.string.tab_authors)
+                else -> getString(R.string.tab_settings)
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
+        }.attach()
+    }
 
-        // Дата рождения (по умолчанию — текущая)
-        var selectedDate: Calendar = Calendar.getInstance()
-        val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-        tvBirthDate.text = dateFormat.format(selectedDate.time)
+    private class TabsAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
 
-        fun updateZodiac(date: Calendar) {
-            val z = getZodiac(
-                date.get(Calendar.DAY_OF_MONTH),
-                date.get(Calendar.MONTH) + 1
-            )
-            ivZodiac.setImageResource(getZodiacImage(z))
-            tvZodiacName.text = z
-        }
+        override fun getItemCount(): Int = 4
 
-        updateZodiac(selectedDate)
-
-        // По нажатию на поле — диалог выбора даты
-        tvBirthDate.setOnClickListener {
-            DatePickerDialog(
-                this,
-                { _, year, month, dayOfMonth ->
-                    selectedDate = Calendar.getInstance().apply {
-                        set(year, month, dayOfMonth)
-                    }
-                    tvBirthDate.text = dateFormat.format(selectedDate.time)
-                    updateZodiac(selectedDate)
-                },
-                selectedDate.get(Calendar.YEAR),
-                selectedDate.get(Calendar.MONTH),
-                selectedDate.get(Calendar.DAY_OF_MONTH)
-            ).apply {
-                datePicker.maxDate = System.currentTimeMillis()
-                show()
-            }
-        }
-
-        // Обработка кнопки
-        btnSubmit.setOnClickListener {
-            val fullName = etFullName.text.toString().trim()
-
-            if (fullName.isEmpty()) {
-                Toast.makeText(this, "Введите ФИО", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val gender = when (rgGender.checkedRadioButtonId) {
-                R.id.rbMale -> "Мужской"
-                R.id.rbFemale -> "Женский"
-                else -> "Не указан"
-            }
-
-            val course = spCourse.selectedItem.toString()
-            val difficulty = sbDifficulty.progress
-
-            val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-            val birthDate = dateFormat.format(selectedDate.time)
-
-            val zodiac = getZodiac(
-                selectedDate.get(Calendar.DAY_OF_MONTH),
-                selectedDate.get(Calendar.MONTH) + 1
-            )
-
-            // Создаём объект Player
-            val player = Player(
-                fullName = fullName,
-                gender = gender,
-                course = course,
-                difficulty = difficulty,
-                birthDate = birthDate,
-                zodiac = zodiac
-            )
-
-            // Вывод результата
-            tvResult.text = """
-                ФИО: ${player.fullName}
-                Пол: ${player.gender}
-                Курс: ${player.course}
-                Уровень сложности: ${player.difficulty}
-                Дата рождения: ${player.birthDate}
-                Знак зодиака: ${player.zodiac}
-            """.trimIndent()
+        override fun createFragment(position: Int): Fragment = when (position) {
+            0 -> RegistrationFragment()
+            1 -> RulesFragment()
+            2 -> AuthorsFragment()
+            else -> SettingsFragment()
         }
     }
 }
