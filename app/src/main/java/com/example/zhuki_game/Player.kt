@@ -5,5 +5,6 @@ data class Player(
     val gender: String,
     val course: String,
     val difficulty: Int,
-    val birthDate: String
+    val birthDate: String,
+    val zodiac: String
 )

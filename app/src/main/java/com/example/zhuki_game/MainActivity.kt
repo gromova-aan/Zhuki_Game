@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity() {
         val tvBirthDate = findViewById<TextView>(R.id.tvBirthDate)
         val btnSubmit = findViewById<Button>(R.id.btnSubmit)
         val tvResult = findViewById<TextView>(R.id.tvResult)
+        val ivZodiac = findViewById<ImageView>(R.id.ivZodiac)
+        val tvZodiacName = findViewById<TextView>(R.id.tvZodiacName)
 
         // Настройка Spinner с курсами
         val courses = arrayOf("1 курс", "2 курс", "3 курс", "4 курс", "5 курс")
@@ -48,6 +50,17 @@ class MainActivity : AppCompatActivity() {
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         tvBirthDate.text = dateFormat.format(selectedDate.time)
 
+        fun updateZodiac(date: Calendar) {
+            val z = getZodiac(
+                date.get(Calendar.DAY_OF_MONTH),
+                date.get(Calendar.MONTH) + 1
+            )
+            ivZodiac.setImageResource(getZodiacImage(z))
+            tvZodiacName.text = z
+        }
+
+        updateZodiac(selectedDate)
+
         // По нажатию на поле — диалог выбора даты
         tvBirthDate.setOnClickListener {
             DatePickerDialog(
@@ -57,6 +70,7 @@ class MainActivity : AppCompatActivity() {
                         set(year, month, dayOfMonth)
                     }
                     tvBirthDate.text = dateFormat.format(selectedDate.time)
+                    updateZodiac(selectedDate)
                 },
                 selectedDate.get(Calendar.YEAR),
                 selectedDate.get(Calendar.MONTH),
@@ -88,13 +102,19 @@ class MainActivity : AppCompatActivity() {
             val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
             val birthDate = dateFormat.format(selectedDate.time)
 
+            val zodiac = getZodiac(
+                selectedDate.get(Calendar.DAY_OF_MONTH),
+                selectedDate.get(Calendar.MONTH) + 1
+            )
+
             // Создаём объект Player
             val player = Player(
                 fullName = fullName,
                 gender = gender,
                 course = course,
                 difficulty = difficulty,
-                birthDate = birthDate
+                birthDate = birthDate,
+                zodiac = zodiac
             )
 
             // Вывод результата
@@ -104,6 +124,7 @@ class MainActivity : AppCompatActivity() {
                 Курс: ${player.course}
                 Уровень сложности: ${player.difficulty}
                 Дата рождения: ${player.birthDate}
+                Знак зодиака: ${player.zodiac}
             """.trimIndent()
         }
     }
