@@ -4,4 +4,14 @@
     <string name="tab_rules">Правила</string>
     <string name="tab_authors">Авторы</string>
     <string name="tab_settings">Настройки</string>
+
+    <string name="settings_title">Настройки игры</string>
+    <string name="settings_speed">Скорость</string>
+    <string name="settings_max_roaches">Макс. тараканов</string>
+    <string name="settings_bonus_interval">Интервал бонусов</string>
+    <string name="settings_round_duration">Длительность раунда</string>
+    <string name="settings_save">Сохранить</string>
+    <string name="settings_reset">Сбросить</string>
+    <string name="settings_saved_toast">Настройки сохранены</string>
+    <string name="settings_reset_toast">Настройки сброшены к значениям по умолчанию</string>
 </resources>

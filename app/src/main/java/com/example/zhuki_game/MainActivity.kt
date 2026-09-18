@@ -26,6 +26,12 @@ class MainActivity : AppCompatActivity() {
                 2 -> getString(R.string.tab_authors)
                 else -> getString(R.string.tab_settings)
             }
+            tab.icon = when (position) {
+                0 -> getDrawable(R.drawable.ic_tab_registration)
+                1 -> getDrawable(R.drawable.ic_tab_rules)
+                2 -> getDrawable(R.drawable.ic_tab_authors)
+                else -> getDrawable(R.drawable.ic_tab_settings)
+            }
         }.attach()
     }
 
