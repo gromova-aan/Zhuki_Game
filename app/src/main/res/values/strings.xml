@@ -4,6 +4,17 @@
     <string name="tab_rules">Правила</string>
     <string name="tab_authors">Авторы</string>
     <string name="tab_settings">Настройки</string>
+    <string name="tab_game">Игра</string>
+
+    <string name="game_score_label">Счёт:</string>
+    <string name="game_time_label">Время:</string>
+    <string name="game_start">Старт</string>
+    <string name="game_reset">Сброс</string>
+    <string name="game_restart">Сыграть ещё раз</string>
+    <string name="game_message_ready">Нажмите «Старт», чтобы начать охоту на жуков</string>
+    <string name="game_message_play">Идёт игра! Тапайте по насекомым, ловите их</string>
+    <string name="game_over_score">Игра окончена! Очки: %1$d</string>
+    <string name="game_insect_desc">Насекомое</string>
 
     <string name="settings_title">Настройки игры</string>
     <string name="settings_speed">Скорость</string>

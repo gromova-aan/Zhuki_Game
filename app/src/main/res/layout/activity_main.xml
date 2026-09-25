@@ -20,7 +20,7 @@
         android:background="@color/purple_700"
         app:tabIndicatorColor="@color/white"
         app:tabIndicatorGravity="top"
-        app:tabMode="fixed"
+        app:tabMode="scrollable"
         app:tabTextAppearance="@style/TabText"
         app:tabSelectedTextColor="@color/white"
         app:tabTextColor="#B3FFFFFF" />
