@@ -5,6 +5,7 @@
     <string name="tab_authors">Авторы</string>
     <string name="tab_settings">Настройки</string>
     <string name="tab_game">Игра</string>
+    <string name="tab_records">Рекорды</string>
 
     <string name="game_score_label">Счёт:</string>
     <string name="game_time_label">Время:</string>
@@ -25,4 +26,9 @@
     <string name="settings_reset">Сбросить</string>
     <string name="settings_saved_toast">Настройки сохранены</string>
     <string name="settings_reset_toast">Настройки сброшены к значениям по умолчанию</string>
+
+    <string name="player_new">Новый игрок</string>
+    <string name="player_saved">Игрок сохранён</string>
+    <string name="game_no_user">Сначала зарегистрируйте игрока</string>
+    <string name="game_record_saved">Рекорд сохранён: %1$d</string>
 </resources>

@@ -12,7 +12,12 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
@@ -258,6 +263,42 @@ class GameFragment : Fragment() {
         btnStart.isEnabled = true
         btnStart.text = getString(R.string.game_restart)
         updateHud()
+        saveScore()
+    }
+
+    private fun saveScore() {
+        val finalScore = score
+        viewLifecycleOwner.lifecycleScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                val repo = UserRepository(requireContext().applicationContext)
+                val currentId = repo.getCurrentUserId()
+                val user = if (currentId == UserRepository.NO_USER) {
+                    null
+                } else {
+                    repo.getUser(currentId)
+                }
+                if (user == null) {
+                    false
+                } else {
+                    repo.saveRecord(finalScore, user.difficulty)
+                    true
+                }
+            }
+            if (!isAdded) return@launch
+            if (saved) {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.game_record_saved, finalScore),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    R.string.game_no_user,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
     private fun resetGame() {

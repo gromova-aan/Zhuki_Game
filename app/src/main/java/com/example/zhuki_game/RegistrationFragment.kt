@@ -7,11 +7,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
 class RegistrationFragment : Fragment() {
+
+    private lateinit var repository: UserRepository
+    private var users: List<User> = emptyList()
+    private var selectedUser: User? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -24,6 +32,9 @@ class RegistrationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        repository = UserRepository(requireContext())
+
+        val spPlayer = view.findViewById<Spinner>(R.id.spPlayer)
         val etFullName = view.findViewById<EditText>(R.id.etFullName)
         val rgGender = view.findViewById<RadioGroup>(R.id.rgGender)
         val spCourse = view.findViewById<Spinner>(R.id.spCourse)
@@ -66,6 +77,78 @@ class RegistrationFragment : Fragment() {
         }
 
         updateZodiac(selectedDate)
+
+        fun clearForm() {
+            etFullName.setText("")
+            rgGender.check(R.id.rbMale)
+            spCourse.setSelection(0)
+            sbDifficulty.progress = 3
+            selectedDate = Calendar.getInstance()
+            tvBirthDate.text = dateFormat.format(selectedDate.time)
+            updateZodiac(selectedDate)
+            tvResult.text = ""
+        }
+
+        fun fillForm(user: User) {
+            etFullName.setText(user.fullName)
+            if (user.gender == "Мужской") {
+                rgGender.check(R.id.rbMale)
+            } else {
+                rgGender.check(R.id.rbFemale)
+            }
+            spCourse.setSelection(courses.indexOf(user.course).takeIf { it >= 0 } ?: 0)
+            sbDifficulty.progress = user.difficulty
+            try {
+                dateFormat.parse(user.birthDate)?.let {
+                    selectedDate = Calendar.getInstance().apply { time = it }
+                    tvBirthDate.text = dateFormat.format(selectedDate.time)
+                    updateZodiac(selectedDate)
+                }
+            } catch (_: Exception) {
+                // оставляем текущую дату
+            }
+        }
+
+        fun refreshPlayers(selectId: Long = UserRepository.NO_USER) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                users = withContext(Dispatchers.IO) { repository.getAllUsers() }
+                val names = listOf(getString(R.string.player_new)) + users.map { it.fullName }
+                spPlayer.adapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item,
+                    names
+                ).also {
+                    it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
+                val wantedId =
+                    if (selectId != UserRepository.NO_USER) selectId
+                    else repository.getCurrentUserId()
+                val pos = users.indexOfFirst { it.id == wantedId }
+                    .takeIf { it >= 0 }?.plus(1) ?: 0
+                spPlayer.setSelection(pos)
+            }
+        }
+
+        spPlayer.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?, v: View?, position: Int, id: Long
+            ) {
+                if (position == 0) {
+                    selectedUser = null
+                    clearForm()
+                } else {
+                    selectedUser = users.getOrNull(position - 1)
+                    selectedUser?.let {
+                        fillForm(it)
+                        repository.setCurrentUserId(it.id)
+                    }
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        refreshPlayers()
 
         tvBirthDate.setOnClickListener {
             DatePickerDialog(
@@ -111,7 +194,8 @@ class RegistrationFragment : Fragment() {
                 selectedDate.get(Calendar.MONTH) + 1
             )
 
-            val player = Player(
+            val user = User(
+                id = selectedUser?.id ?: 0,
                 fullName = fullName,
                 gender = gender,
                 course = course,
@@ -120,14 +204,23 @@ class RegistrationFragment : Fragment() {
                 zodiac = zodiac
             )
 
-            tvResult.text = """
-                ФИО: ${player.fullName}
-                Пол: ${player.gender}
-                Курс: ${player.course}
-                Уровень сложности: ${player.difficulty}
-                Дата рождения: ${player.birthDate}
-                Знак зодиака: ${player.zodiac}
-            """.trimIndent()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val newId = withContext(Dispatchers.IO) { repository.register(user) }
+                refreshPlayers(selectId = newId)
+                tvResult.text = """
+                    ФИО: ${user.fullName}
+                    Пол: ${user.gender}
+                    Курс: ${user.course}
+                    Уровень сложности: ${user.difficulty}
+                    Дата рождения: ${user.birthDate}
+                    Знак зодиака: ${user.zodiac}
+                """.trimIndent()
+                Toast.makeText(
+                    requireContext(),
+                    R.string.player_saved,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 }

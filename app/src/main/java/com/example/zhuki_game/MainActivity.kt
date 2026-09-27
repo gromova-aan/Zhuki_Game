@@ -25,28 +25,31 @@ class MainActivity : AppCompatActivity() {
                 1 -> getString(R.string.tab_rules)
                 2 -> getString(R.string.tab_authors)
                 3 -> getString(R.string.tab_settings)
-                else -> getString(R.string.tab_game)
+                4 -> getString(R.string.tab_game)
+                else -> getString(R.string.tab_records)
             }
             tab.icon = when (position) {
                 0 -> getDrawable(R.drawable.ic_tab_registration)
                 1 -> getDrawable(R.drawable.ic_tab_rules)
                 2 -> getDrawable(R.drawable.ic_tab_authors)
                 3 -> getDrawable(R.drawable.ic_tab_settings)
-                else -> getDrawable(R.drawable.ic_tab_game)
+                4 -> getDrawable(R.drawable.ic_tab_game)
+                else -> getDrawable(R.drawable.ic_tab_records)
             }
         }.attach()
     }
 
     private class TabsAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
 
-        override fun getItemCount(): Int = 5
+        override fun getItemCount(): Int = 6
 
         override fun createFragment(position: Int): Fragment = when (position) {
             0 -> RegistrationFragment()
             1 -> RulesFragment()
             2 -> AuthorsFragment()
             3 -> SettingsFragment()
-            else -> GameFragment()
+            4 -> GameFragment()
+            else -> RecordsFragment()
         }
     }
 }
