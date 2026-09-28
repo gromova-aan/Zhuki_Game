@@ -105,7 +105,6 @@ class RegistrationFragment : Fragment() {
                     updateZodiac(selectedDate)
                 }
             } catch (_: Exception) {
-                // оставляем текущую дату
             }
         }
 

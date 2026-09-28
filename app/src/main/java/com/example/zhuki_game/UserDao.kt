@@ -2,14 +2,17 @@ package com.example.zhuki_game
 
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface UserDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(user: User): Long
+
+    @Update
+    suspend fun update(user: User)
 
     @Query("SELECT * FROM users ORDER BY fullName")
     suspend fun getAll(): List<User>

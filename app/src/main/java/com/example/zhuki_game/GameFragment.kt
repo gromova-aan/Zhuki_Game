@@ -269,35 +269,21 @@ class GameFragment : Fragment() {
     private fun saveScore() {
         val finalScore = score
         viewLifecycleOwner.lifecycleScope.launch {
-            val saved = withContext(Dispatchers.IO) {
-                val repo = UserRepository(requireContext().applicationContext)
-                val currentId = repo.getCurrentUserId()
-                val user = if (currentId == UserRepository.NO_USER) {
-                    null
-                } else {
-                    repo.getUser(currentId)
-                }
-                if (user == null) {
-                    false
-                } else {
-                    repo.saveRecord(finalScore, user.difficulty)
-                    true
-                }
+            val result = withContext(Dispatchers.IO) {
+                UserRepository(requireContext().applicationContext)
+                    .saveRecord(finalScore)
             }
             if (!isAdded) return@launch
-            if (saved) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.game_record_saved, finalScore),
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    R.string.game_no_user,
-                    Toast.LENGTH_SHORT
-                ).show()
+            val message = when (result) {
+                is RecordSaveResult.NoUser -> getString(R.string.game_no_user)
+                is RecordSaveResult.Created ->
+                    getString(R.string.game_record_saved, result.score)
+                is RecordSaveResult.Beaten ->
+                    getString(R.string.game_record_beaten, result.score)
+                is RecordSaveResult.Kept ->
+                    getString(R.string.game_record_kept, result.bestScore)
             }
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
         }
     }
 

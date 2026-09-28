@@ -31,4 +31,6 @@
     <string name="player_saved">Игрок сохранён</string>
     <string name="game_no_user">Сначала зарегистрируйте игрока</string>
     <string name="game_record_saved">Рекорд сохранён: %1$d</string>
+    <string name="game_record_beaten">Новый рекорд: %1$d</string>
+    <string name="game_record_kept">Рекорд не побит, лучший: %1$d</string>
 </resources>

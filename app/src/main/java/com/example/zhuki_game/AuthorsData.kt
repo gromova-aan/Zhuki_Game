@@ -1,7 +1,5 @@
 package com.example.zhuki_game
 
-// Список авторов. Чтобы добавить автора: положи его фото
-// (author_*.png) в res/drawable/ и добавь строку в список ниже.
 object AuthorsData {
 
     val authors = listOf(
