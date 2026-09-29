@@ -13,9 +13,10 @@
     <string name="game_reset">Сброс</string>
     <string name="game_restart">Сыграть ещё раз</string>
     <string name="game_message_ready">Нажмите «Старт», чтобы начать охоту на жуков</string>
-    <string name="game_message_play">Идёт игра! Тапайте по насекомым, ловите их</string>
+    <string name="game_message_play">Идёт игра! Ловите насекомых и хватайте золотые звёзды</string>
     <string name="game_over_score">Игра окончена! Очки: %1$d</string>
     <string name="game_insect_desc">Насекомое</string>
+    <string name="game_bonus_desc">Бонус</string>
 
     <string name="settings_title">Настройки игры</string>
     <string name="settings_speed">Скорость</string>

@@ -42,7 +42,7 @@ data class GameSettings(
         val DEFAULTS = GameSettings(
             speed = 5,
             maxRoaches = 10,
-            bonusInterval = 10,
+            bonusInterval = 15,
             roundDuration = 60
         )
     }

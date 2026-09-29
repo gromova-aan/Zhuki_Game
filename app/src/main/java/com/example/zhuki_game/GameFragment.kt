@@ -1,5 +1,11 @@
 package com.example.zhuki_game
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -35,6 +41,10 @@ class GameFragment : Fragment() {
         const val SPEED_MAX_DP = 56f
         const val SPEED_GROWTH = 1.5f
         const val SPEED_AFTER_LEVEL_DP = 12f
+        const val BONUS_SIZE_DP = 64
+        const val TILT_MODE_DURATION_MS = 10_000L
+        const val TILT_ACCEL_FACTOR = 18f
+        const val MAX_SPEED_DP = 260f
     }
 
     private data class Insect(
@@ -70,8 +80,34 @@ class GameFragment : Fragment() {
     private var lastFrameTime = 0L
     private var gameRunning = false
 
+    private var bonusView: ImageView? = null
+    private var bonusSpawned = false
+    private var bonusNextSec = 0f
+    private var bonusVx = 0f
+    private var bonusVy = 0f
+    private var tiltModeUntil = 0L
+    private var gravityX = 0f
+    private var gravityY = 0f
+    private var sensorManager: SensorManager? = null
+    private var gravitySensor: Sensor? = null
+    private var screamPlayer: MediaPlayer? = null
+
     private val density: Float
         get() = resources.displayMetrics.density
+
+    private val tiltActive: Boolean
+        get() = gameRunning && SystemClock.uptimeMillis() < tiltModeUntil
+
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            if (event.sensor.type == Sensor.TYPE_GRAVITY) {
+                gravityX = event.values[0]
+                gravityY = event.values[1]
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
 
     private val gameLoop = object : Runnable {
         override fun run() {
@@ -95,6 +131,15 @@ class GameFragment : Fragment() {
             if (now - lastRespawn >= RESPAWN_INTERVAL_MS && normalCount < settings.maxRoaches) {
                 lastRespawn = now
                 spawnInsect()
+            }
+
+            if (!bonusSpawned && elapsedSec >= bonusNextSec) {
+                bonusNextSec = elapsedSec + settings.bonusInterval
+                spawnBonus()
+            }
+
+            if (!tiltActive) {
+                stopScream()
             }
 
             updateHud()
@@ -139,8 +184,19 @@ class GameFragment : Fragment() {
         showReadyState()
     }
 
+    override fun onResume() {
+        super.onResume()
+        sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager?
+        gravitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY)
+        gravitySensor?.let {
+            sensorManager?.registerListener(sensorListener, it, SensorManager.SENSOR_DELAY_GAME)
+        }
+    }
+
     override fun onPause() {
         super.onPause()
+        stopScream()
+        sensorManager?.unregisterListener(sensorListener)
         if (gameRunning) {
             endGame()
         }
@@ -153,6 +209,10 @@ class GameFragment : Fragment() {
         startMillis = SystemClock.uptimeMillis()
         lastRespawn = 0L
         lastFrameTime = 0L
+        removeBonus()
+        bonusNextSec = settings.bonusInterval.toFloat()
+        tiltModeUntil = 0L
+        stopScream()
         gameRunning = true
         btnStart.text = getString(R.string.game_reset)
         tvMessage.text = getString(R.string.game_message_play)
@@ -186,15 +246,7 @@ class GameFragment : Fragment() {
         )
 
         val angle = Random.nextFloat() * 2 * Math.PI
-        val t = (settings.speed - 1).toFloat()
-        var speedDp = SPEED_MAX_DP - (SPEED_MAX_DP - SPEED_MIN_DP) * exp(-SPEED_GROWTH * t)
-        if (settings.speed > 1) {
-            speedDp *= 1.5f
-        }
-        if (settings.speed > 5) {
-            speedDp += (settings.speed - 5) * SPEED_AFTER_LEVEL_DP
-        }
-        val speedPx = speedDp * density
+        val speedPx = currentSpeedDp() * density
         insect.vx = (cos(angle) * speedPx).toFloat()
         insect.vy = (sin(angle) * speedPx).toFloat()
 
@@ -205,6 +257,80 @@ class GameFragment : Fragment() {
         insectView.translationY = Random.nextFloat() * maxY
     }
 
+    private fun currentSpeedDp(): Float {
+        val t = (settings.speed - 1).toFloat()
+        var speedDp = SPEED_MAX_DP - (SPEED_MAX_DP - SPEED_MIN_DP) * exp(-SPEED_GROWTH * t)
+        if (settings.speed > 1) {
+            speedDp *= 1.5f
+        }
+        if (settings.speed > 5) {
+            speedDp += (settings.speed - 5) * SPEED_AFTER_LEVEL_DP
+        }
+        return speedDp
+    }
+
+    private fun spawnBonus() {
+        val sizePx = (BONUS_SIZE_DP * density).toInt()
+        val bonus = ImageView(requireContext()).apply {
+            setImageResource(R.drawable.ic_bonus)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = getString(R.string.game_bonus_desc)
+            layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
+        }
+
+        val maxX = (field.width - sizePx).coerceAtLeast(0)
+        val maxY = (field.height - sizePx).coerceAtLeast(0)
+
+        val angle = Random.nextFloat() * 2 * Math.PI
+        val speedPx = currentSpeedDp() * density
+        bonusVx = (cos(angle) * speedPx).toFloat()
+        bonusVy = (sin(angle) * speedPx).toFloat()
+
+        bonus.setOnClickListener { onBonusClicked() }
+        field.addView(bonus)
+        bonusView = bonus
+        bonusSpawned = true
+        bonus.translationX = Random.nextFloat() * maxX
+        bonus.translationY = Random.nextFloat() * maxY
+    }
+
+    private fun onBonusClicked() {
+        if (!gameRunning) return
+        bonusView?.let { field.removeView(it) }
+        bonusView = null
+        bonusSpawned = false
+        tiltModeUntil = SystemClock.uptimeMillis() + TILT_MODE_DURATION_MS
+        insects.forEach {
+            it.vx = 0f
+            it.vy = 0f
+        }
+        startScream()
+    }
+
+    private fun removeBonus() {
+        bonusView?.let { field.removeView(it) }
+        bonusView = null
+        bonusSpawned = false
+    }
+
+    private fun startScream() {
+        if (screamPlayer == null) {
+            screamPlayer = MediaPlayer.create(requireContext(), R.raw.bug_scream)?.apply {
+                isLooping = true
+                setVolume(0.7f, 0.7f)
+                start()
+            }
+        }
+    }
+
+    private fun stopScream() {
+        screamPlayer?.let {
+            if (it.isPlaying) it.stop()
+            it.release()
+        }
+        screamPlayer = null
+    }
+
     private fun stepInsects(deltaSec: Float) {
         val fieldW = field.width
         val fieldH = field.height
@@ -212,6 +338,19 @@ class GameFragment : Fragment() {
         val iterator = insects.iterator()
         while (iterator.hasNext()) {
             val insect = iterator.next()
+
+            if (tiltActive) {
+                insect.vx += gravityX * TILT_ACCEL_FACTOR * deltaSec
+                insect.vy += gravityY * TILT_ACCEL_FACTOR * deltaSec
+                val maxV = MAX_SPEED_DP * density
+                val maxV2 = maxV * maxV
+                val s2 = insect.vx * insect.vx + insect.vy * insect.vy
+                if (s2 > maxV2) {
+                    val scale = maxV / kotlin.math.sqrt(s2)
+                    insect.vx *= scale
+                    insect.vy *= scale
+                }
+            }
 
             insect.view.translationX += insect.vx * deltaSec
             insect.view.translationY += insect.vy * deltaSec
@@ -221,20 +360,61 @@ class GameFragment : Fragment() {
 
             if (insect.view.translationX < 0f) {
                 insect.view.translationX = 0f
-                insect.vx = abs(insect.vx)
-                insect.view.scaleX = 1f
+                if (tiltActive) {
+                    insect.vx = 0f
+                } else {
+                    insect.vx = abs(insect.vx)
+                    insect.view.scaleX = 1f
+                }
             } else if (insect.view.translationX + w > fieldW) {
                 insect.view.translationX = (fieldW - w).coerceAtLeast(0f)
-                insect.vx = -abs(insect.vx)
-                insect.view.scaleX = -1f
+                if (tiltActive) {
+                    insect.vx = 0f
+                } else {
+                    insect.vx = -abs(insect.vx)
+                    insect.view.scaleX = -1f
+                }
             }
 
             if (insect.view.translationY < 0f) {
                 insect.view.translationY = 0f
-                insect.vy = abs(insect.vy)
+                if (tiltActive) {
+                    insect.vy = 0f
+                } else {
+                    insect.vy = abs(insect.vy)
+                }
             } else if (insect.view.translationY + h > fieldH) {
                 insect.view.translationY = (fieldH - h).coerceAtLeast(0f)
-                insect.vy = -abs(insect.vy)
+                if (tiltActive) {
+                    insect.vy = 0f
+                } else {
+                    insect.vy = -abs(insect.vy)
+                }
+            }
+        }
+
+        val bonus = bonusView
+        if (bonus != null) {
+            bonus.translationX += bonusVx * deltaSec
+            bonus.translationY += bonusVy * deltaSec
+
+            val w = bonus.width.toFloat()
+            val h = bonus.height.toFloat()
+
+            if (bonus.translationX < 0f) {
+                bonus.translationX = 0f
+                bonusVx = abs(bonusVx)
+            } else if (bonus.translationX + w > fieldW) {
+                bonus.translationX = (fieldW - w).coerceAtLeast(0f)
+                bonusVx = -abs(bonusVx)
+            }
+
+            if (bonus.translationY < 0f) {
+                bonus.translationY = 0f
+                bonusVy = abs(bonusVy)
+            } else if (bonus.translationY + h > fieldH) {
+                bonus.translationY = (fieldH - h).coerceAtLeast(0f)
+                bonusVy = -abs(bonusVy)
             }
         }
     }
@@ -258,6 +438,8 @@ class GameFragment : Fragment() {
         gameRunning = false
         handler.removeCallbacks(gameLoop)
         clearInsects()
+        removeBonus()
+        stopScream()
         tvTimer.text = "0"
         tvMessage.text = getString(R.string.game_over_score, score)
         btnStart.isEnabled = true
@@ -291,6 +473,8 @@ class GameFragment : Fragment() {
         gameRunning = false
         handler.removeCallbacks(gameLoop)
         clearInsects()
+        removeBonus()
+        stopScream()
         showReadyState()
     }
 
