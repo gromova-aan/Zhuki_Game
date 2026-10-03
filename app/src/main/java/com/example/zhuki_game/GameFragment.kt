@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.exp
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -45,12 +46,18 @@ class GameFragment : Fragment() {
         const val TILT_MODE_DURATION_MS = 10_000L
         const val TILT_ACCEL_FACTOR = 18f
         const val MAX_SPEED_DP = 260f
+        const val GOLD_SPAWN_INTERVAL_MS = 20_000L
+        const val GOLD_SIZE_DP = 70
+        const val GOLD_POINTS_DIVISOR = 1000
+        const val DEFAULT_GOLD_RATE = 11000.0
+        val GOLD_COLOR: Int = 0xFFFFD700.toInt()
     }
 
     private data class Insect(
         val view: ImageView,
         var vx: Float,
-        var vy: Float
+        var vy: Float,
+        val golden: Boolean = false
     )
 
     private val insectDrawables = intArrayOf(
@@ -91,6 +98,8 @@ class GameFragment : Fragment() {
     private var sensorManager: SensorManager? = null
     private var gravitySensor: Sensor? = null
     private var screamPlayer: MediaPlayer? = null
+    private var lastGoldSpawn = 0L
+    private var goldRate: Double = DEFAULT_GOLD_RATE
 
     private val density: Float
         get() = resources.displayMetrics.density
@@ -127,7 +136,7 @@ class GameFragment : Fragment() {
             timeLeftSec = (settings.roundDuration - elapsedSec).toInt()
             stepInsects(deltaSec)
 
-            val normalCount = insects.size
+            val normalCount = insects.count { !it.golden }
             if (now - lastRespawn >= RESPAWN_INTERVAL_MS && normalCount < settings.maxRoaches) {
                 lastRespawn = now
                 spawnInsect()
@@ -136,6 +145,11 @@ class GameFragment : Fragment() {
             if (!bonusSpawned && elapsedSec >= bonusNextSec) {
                 bonusNextSec = elapsedSec + settings.bonusInterval
                 spawnBonus()
+            }
+
+            if (now - lastGoldSpawn >= GOLD_SPAWN_INTERVAL_MS) {
+                lastGoldSpawn = now
+                spawnInsect(golden = true)
             }
 
             if (!tiltActive) {
@@ -209,6 +223,8 @@ class GameFragment : Fragment() {
         startMillis = SystemClock.uptimeMillis()
         lastRespawn = 0L
         lastFrameTime = 0L
+        lastGoldSpawn = SystemClock.uptimeMillis()
+        loadGoldRate()
         removeBonus()
         bonusNextSec = settings.bonusInterval.toFloat()
         tiltModeUntil = 0L
@@ -225,15 +241,18 @@ class GameFragment : Fragment() {
         updateHud()
     }
 
-    private fun spawnInsect() {
-        val sizePx = (INSECT_SIZE_DP * density).toInt()
+    private fun spawnInsect(golden: Boolean = false) {
+        val sizePx = ((if (golden) GOLD_SIZE_DP else INSECT_SIZE_DP) * density).toInt()
         val drawable = insectDrawables[Random.nextInt(insectDrawables.size)]
 
         val insectView = ImageView(requireContext()).apply {
             setImageResource(drawable)
             scaleType = ImageView.ScaleType.FIT_CENTER
-            contentDescription = getString(R.string.game_insect_desc)
+            contentDescription = getString(
+                if (golden) R.string.game_golden_desc else R.string.game_insect_desc
+            )
             layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
+            if (golden) setColorFilter(GOLD_COLOR)
         }
 
         val maxX = (field.width - sizePx).coerceAtLeast(0)
@@ -242,7 +261,8 @@ class GameFragment : Fragment() {
         val insect = Insect(
             view = insectView,
             vx = 0f,
-            vy = 0f
+            vy = 0f,
+            golden = golden
         )
 
         val angle = Random.nextFloat() * 2 * Math.PI
@@ -424,7 +444,7 @@ class GameFragment : Fragment() {
 
         field.removeView(insect.view)
         insects.remove(insect)
-        score += POINTS_PER_KILL
+        score += if (insect.golden) goldPoints() else POINTS_PER_KILL
         updateHud()
     }
 
@@ -494,6 +514,18 @@ class GameFragment : Fragment() {
     private fun clearInsects() {
         insects.forEach { field.removeView(it.view) }
         insects.clear()
+    }
+
+    private fun goldPoints(): Int =
+        (goldRate / GOLD_POINTS_DIVISOR).roundToInt().coerceAtLeast(1)
+
+    private fun loadGoldRate() {
+        val repository = GoldRateRepository.getInstance(requireContext().applicationContext)
+        repository.cachedRate()?.let { goldRate = it }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val rate = repository.fetchGoldRate()
+            if (rate != null) goldRate = rate
+        }
     }
 
     private fun abs(value: Float): Float = kotlin.math.abs(value)

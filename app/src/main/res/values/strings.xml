@@ -34,4 +34,10 @@
     <string name="game_record_saved">Рекорд сохранён: %1$d</string>
     <string name="game_record_beaten">Новый рекорд: %1$d</string>
     <string name="game_record_kept">Рекорд не побит, лучший: %1$d</string>
+
+    <string name="widget_gold_label">Курс золота ЦБ</string>
+    <string name="widget_gold_desc">Показывает текущий курс золота Банка России</string>
+    <string name="widget_gold_none">Нет данных</string>
+    <string name="widget_gold_unit">₽ / грамм</string>
+    <string name="game_golden_desc">Золотой таракан</string>
 </resources>
