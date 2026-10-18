@@ -8,13 +8,14 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import org.koin.android.ext.android.inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class RecordsFragment : Fragment() {
 
-    private lateinit var repository: UserRepository
+    private val repository: UserRepository by inject()
     private lateinit var listView: ListView
     private lateinit var emptyView: TextView
 
@@ -29,7 +30,6 @@ class RecordsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        repository = UserRepository(requireContext())
         listView = view.findViewById(R.id.lvRecords)
         emptyView = view.findViewById(R.id.tvRecordsEmpty)
         listView.emptyView = emptyView

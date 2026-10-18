@@ -9,8 +9,11 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import org.koin.android.ext.android.inject
 
 class SettingsFragment : Fragment() {
+
+    private val repository: SettingsRepository by inject()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -23,7 +26,6 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val repository = SettingsRepository(SharedPreferencesStorage(requireContext()))
         val current = repository.load()
 
         val tvSpeedValue = view.findViewById<TextView>(R.id.tvSpeedValue)

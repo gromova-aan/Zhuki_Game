@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import org.koin.android.ext.android.inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -17,7 +18,7 @@ import java.util.Locale
 
 class RegistrationFragment : Fragment() {
 
-    private lateinit var repository: UserRepository
+    private val repository: UserRepository by inject()
     private var users: List<User> = emptyList()
     private var selectedUser: User? = null
 
@@ -31,8 +32,6 @@ class RegistrationFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        repository = UserRepository(requireContext())
 
         val spPlayer = view.findViewById<Spinner>(R.id.spPlayer)
         val etFullName = view.findViewById<EditText>(R.id.etFullName)
