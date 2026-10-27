@@ -16,7 +16,8 @@ import kotlin.random.Random
 class GameViewModel(
     private val settingsRepository: SettingsRepository,
     private val userRepository: UserRepository,
-    private val goldRateRepository: GoldRateRepository
+    private val goldRateRepository: GoldRateRepository,
+    private val skinRepository: SkinRepository
 ) : ViewModel() {
 
     companion object {
@@ -37,6 +38,7 @@ class GameViewModel(
         const val GOLD_SIZE_DP = 70
         const val GOLD_POINTS_DIVISOR = 1000
         const val DEFAULT_GOLD_RATE = 11000.0
+        val GOLD_COLOR: Int = 0xFFFFD700.toInt()
     }
 
     enum class GameState { READY, PLAYING, FINISHED }
@@ -45,6 +47,9 @@ class GameViewModel(
         val id: Long,
         val drawableRes: Int,
         val golden: Boolean,
+        val sizeDp: Float,
+        val tint: Int?,
+        val mood: Mood?,
         var xDp: Float,
         var yDp: Float,
         var vxDp: Float,
@@ -89,6 +94,9 @@ class GameViewModel(
     var goldRate: Double = DEFAULT_GOLD_RATE
         private set
 
+    var activeSet: SkinSet = SkinSet.DEFAULT
+        private set
+
     private var fieldWidthDp = 0f
     private var fieldHeightDp = 0f
 
@@ -115,6 +123,7 @@ class GameViewModel(
 
     fun startGame() {
         settings = settingsRepository.load()
+        activeSet = skinRepository.activeSet()
         insects.clear()
         bonus = null
         _score.value = 0
@@ -206,20 +215,41 @@ class GameViewModel(
     }
 
     private fun spawnInsect(golden: Boolean = false) {
-        val sizeDp = if (golden) GOLD_SIZE_DP else INSECT_SIZE_DP
-        val drawable = insectDrawables[Random.nextInt(insectDrawables.size)]
+        val sizeDp: Float
+        val drawable: Int
+        val tint: Int?
+        val mood: Mood?
+        val speedDp: Float
+
+        if (golden) {
+            sizeDp = GOLD_SIZE_DP.toFloat()
+            drawable = insectDrawables[Random.nextInt(insectDrawables.size)]
+            tint = GOLD_COLOR
+            mood = null
+            speedDp = currentSpeedDp()
+        } else {
+            val variant = activeSet.pickVariant()
+            sizeDp = INSECT_SIZE_DP * variant.sizePercent / 100f
+            drawable = variant.texture.drawableRes
+                ?: insectDrawables[Random.nextInt(insectDrawables.size)]
+            tint = variant.color
+            mood = variant.mood
+            speedDp = currentSpeedDp() * variant.mood.speedMultiplier
+        }
 
         val maxX = (fieldWidthDp - sizeDp).coerceAtLeast(0f)
         val maxY = (fieldHeightDp - sizeDp).coerceAtLeast(0f)
 
         val angle = Random.nextFloat() * 2 * Math.PI
-        val speedDp = currentSpeedDp()
 
         insects.add(
             InsectState(
                 id = nextInsectId++,
                 drawableRes = drawable,
                 golden = golden,
+                sizeDp = sizeDp,
+                tint = tint,
+                mood = mood,
                 xDp = Random.nextFloat() * maxX,
                 yDp = Random.nextFloat() * maxY,
                 vxDp = (cos(angle) * speedDp).toFloat(),
@@ -279,7 +309,7 @@ class GameViewModel(
             insect.xDp += insect.vxDp * deltaSec
             insect.yDp += insect.vyDp * deltaSec
 
-            val size = if (insect.golden) GOLD_SIZE_DP.toFloat() else INSECT_SIZE_DP.toFloat()
+            val size = insect.sizeDp
 
             //от левой стенки
             if (insect.xDp < 0f) {

@@ -11,7 +11,9 @@ val appModule = module {
     single { SettingsRepository(get()) }
     single { UserRepository(androidContext()) }
     single { GoldRateRepository.getInstance(androidContext()) }
-    viewModel { GameViewModel(get(), get(), get()) }
+    single<SkinStorage> { SharedPreferencesSkinStorage(androidContext()) }
+    single { SkinRepository(get()) }
+    viewModel { GameViewModel(get(), get(), get(), get()) }
 }
 
 class App : Application() {
