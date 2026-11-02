@@ -5,6 +5,7 @@
     <string name="tab_authors">Авторы</string>
     <string name="tab_settings">Настройки</string>
     <string name="tab_game">Игра</string>
+    <string name="tab_skins">Скины</string>
     <string name="tab_records">Рекорды</string>
 
     <string name="game_score_label">Счёт:</string>
@@ -40,4 +41,46 @@
     <string name="widget_gold_none">Нет данных</string>
     <string name="widget_gold_unit">₽ / грамм</string>
     <string name="game_golden_desc">Золотой таракан</string>
+
+    <string name="skin_title">Редактор скинов</string>
+    <string name="skin_sets_title">Наборы</string>
+    <string name="skin_variants_title">Варианты</string>
+    <string name="skin_form_title">Настройка варианта</string>
+    <string name="skin_new_set">Новый набор</string>
+    <string name="skin_new_variant">Новый вариант</string>
+    <string name="skin_set_name_hint">Название набора</string>
+    <string name="skin_color">Цвет</string>
+    <string name="skin_color_none">Без цвета</string>
+    <string name="skin_color_desc">Цвет жука</string>
+    <string name="skin_size">Размер</string>
+    <string name="skin_size_value">%1$d%%</string>
+    <string name="skin_texture">Текстура</string>
+    <string name="skin_mood">Настроение</string>
+    <string name="skin_preview">Предпросмотр</string>
+    <string name="skin_save">Сохранить</string>
+    <string name="skin_delete_variant">Удалить вариант</string>
+    <string name="skin_apply">Применить набор</string>
+    <string name="skin_delete_set">Удалить набор</string>
+    <string name="skin_variants_count">Вариантов: %1$d</string>
+    <string name="skin_variant_info">%1$d%% · %2$s · %3$s</string>
+    <string name="skin_texture_label">Текстура %1$s</string>
+    <string name="skin_texture_random">Случайно</string>
+    <string name="skin_mood_friendly">Дружелюбный</string>
+    <string name="skin_mood_angry">Злой</string>
+    <string name="skin_mood_badge_desc">Настроение варианта</string>
+    <string name="skin_set_preview_desc">Превью набора</string>
+    <string name="skin_variant_preview_desc">Превью варианта</string>
+    <string name="skin_preview_desc">Предпросмотр жука</string>
+    <string name="skin_set_created">Набор создан</string>
+    <string name="skin_saved">Изменения сохранены</string>
+    <string name="skin_applied">Набор применён в игре</string>
+    <string name="skin_variant_deleted">Вариант удалён</string>
+    <string name="skin_set_deleted">Набор удалён</string>
+    <string name="skin_error_sets_limit">Достигнут лимит наборов</string>
+    <string name="skin_error_variants_limit">Достигнут лимит вариантов</string>
+    <string name="skin_error_readonly">Классический набор нельзя изменить</string>
+    <string name="skin_error_variant">Проверьте параметры варианта</string>
+    <string name="skin_error_name">Введите корректное название набора</string>
+    <string name="skin_error_last_variant">В наборе должен остаться хотя бы один вариант</string>
+    <string name="skin_error_save">Не удалось сохранить изменения</string>
 </resources>

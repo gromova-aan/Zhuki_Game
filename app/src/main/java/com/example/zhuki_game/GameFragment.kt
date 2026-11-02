@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -33,7 +34,7 @@ class GameFragment : Fragment() {
     private lateinit var btnStart: Button
 
     private val handler = Handler(Looper.getMainLooper())
-    private val insectViews = mutableMapOf<Long, ImageView>()
+    private val insectViews = mutableMapOf<Long, InsectView>()
     private var bonusImageView: ImageView? = null
     private var lastFrameTime = 0L
     private var loopRunning = false
@@ -45,7 +46,10 @@ class GameFragment : Fragment() {
     private val density: Float
         get() = resources.displayMetrics.density
 
-    private val goldColor: Int = 0xFFFFD700.toInt()
+    private data class InsectView(
+        val container: FrameLayout,
+        val image: ImageView
+    )
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
@@ -218,40 +222,66 @@ class GameFragment : Fragment() {
         for (insect in viewModel.insects) {
             activeIds.add(insect.id)
             //insectViews - пустая карта нового фрагмента
-            //insectViews[1L] == null -> создаём новый ImageView
+            //insectViews[1L] == null -> создаём новый контейнер
             val insectView = insectViews[insect.id] ?: createInsectView(insect).also {
                 insectViews[insect.id] = it
-                field.addView(it)
+                field.addView(it.container)
             }
-            insectView.translationX = insect.xDp * density
-            insectView.translationY = insect.yDp * density
-            insectView.scaleX = if (insect.flipX) -1f else 1f
+            insectView.container.translationX = insect.xDp * density
+            insectView.container.translationY = insect.yDp * density
+            insectView.image.scaleX = if (insect.flipX) -1f else 1f
         }
 
         val iterator = insectViews.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (entry.key !in activeIds) {
-                field.removeView(entry.value)
+                field.removeView(entry.value.container)
                 iterator.remove()
             }
         }
     }
 
-    private fun createInsectView(insect: GameViewModel.InsectState): ImageView {
-        val sizeDp =
-            if (insect.golden) GameViewModel.GOLD_SIZE_DP else GameViewModel.INSECT_SIZE_DP
-        val sizePx = (sizeDp * density).toInt()
-        return ImageView(requireContext()).apply {
-            setImageResource(insect.drawableRes)
-            scaleType = ImageView.ScaleType.FIT_CENTER
+    private fun createInsectView(insect: GameViewModel.InsectState): InsectView {
+        val sizePx = (insect.sizeDp * density).toInt().coerceAtLeast(1)
+
+        val container = FrameLayout(requireContext()).apply {
+            layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
             contentDescription = getString(
                 if (insect.golden) R.string.game_golden_desc else R.string.game_insect_desc
             )
-            layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
-            if (insect.golden) setColorFilter(goldColor)
             setOnClickListener { viewModel.onInsectClicked(insect.id) }
         }
+
+        val image = ImageView(requireContext()).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setImageResource(insect.drawableRes)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            insect.tint?.let { setColorFilter(it) }
+        }
+        container.addView(image)
+
+        insect.mood?.let { mood ->
+            val badgeSize = (16 * density).toInt()
+            val badge = ImageView(requireContext()).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    badgeSize,
+                    badgeSize,
+                    Gravity.BOTTOM or Gravity.END
+                )
+                setImageResource(
+                    if (mood == Mood.ANGRY) R.drawable.ic_mood_angry
+                    else R.drawable.ic_mood_friendly
+                )
+                contentDescription = getString(R.string.skin_mood_badge_desc)
+            }
+            container.addView(badge)
+        }
+
+        return InsectView(container, image)
     }
 
     private fun renderBonus() {
