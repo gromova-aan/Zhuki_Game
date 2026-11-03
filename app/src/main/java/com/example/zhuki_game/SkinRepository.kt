@@ -5,23 +5,23 @@ sealed class SkinSaveResult {
     data class Failure(val errors: List<String>) : SkinSaveResult()
 }
 
-class SkinRepository(private val storage: SkinStorage) {
+open class SkinRepository(private val storage: SkinStorage) {
 
-    fun getSets(): List<SkinSet> = storage.getAll()
+    open fun getSets(): List<SkinSet> = storage.getAll()
 
-    fun activeSet(): SkinSet {
+    open fun activeSet(): SkinSet {
         val id = storage.getActiveSetId()
         if (id == SkinSet.DEFAULT_ID) return SkinSet.DEFAULT
         return storage.getAll().firstOrNull { it.id == id } ?: SkinSet.DEFAULT
     }
 
-    fun setActive(id: Long) {
+    open fun setActive(id: Long) {
         if (id == SkinSet.DEFAULT_ID || storage.getAll().any { it.id == id }) {
             storage.setActiveSetId(id)
         }
     }
 
-    fun saveSet(set: SkinSet): SkinSaveResult {
+    open fun saveSet(set: SkinSet): SkinSaveResult {
         val errors = set.errors()
         if (errors.isNotEmpty()) return SkinSaveResult.Failure(errors)
 
@@ -36,7 +36,7 @@ class SkinRepository(private val storage: SkinStorage) {
         return SkinSaveResult.Success(saved)
     }
 
-    fun deleteSet(id: Long) {
+    open fun deleteSet(id: Long) {
         storage.delete(id)
         if (storage.getActiveSetId() == id) {
             storage.setActiveSetId(SkinSet.DEFAULT_ID)

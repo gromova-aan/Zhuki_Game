@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.retrofit.converter.scalars)
     implementation(libs.koin.android)
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.arch.core.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
